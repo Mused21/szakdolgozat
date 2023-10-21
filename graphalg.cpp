@@ -11,67 +11,57 @@ using namespace std;
 
 class CycleFormedException : public exception {
 private:
-    pair<unsigned, unsigned> edge;
+    pair<int, int> edge;
 public:
     CycleFormedException(){
     }
 
-    CycleFormedException(pair<unsigned, unsigned> edge) : edge(edge) {
+    CycleFormedException(pair<int, int> edge) : edge(edge) {
     }
 
-    const pair<unsigned, unsigned>& getEdge() const {
+    const pair<int, int>& getEdge() const {
         return edge;
     }
 };
 
 class StaticGraph {
-    unsigned N;
-    vector<unsigned>* adj;
+    int N;
+    vector<vector<int>> adj;
+    vector<int> inDegree;
  
 public:
-    StaticGraph(unsigned N) : N(N), adj(new vector<unsigned>[N]){
+    StaticGraph(int N) : N(N), adj(N), inDegree(N){
     }
  
-    void insertEdge(const pair<unsigned, unsigned>& edge) {
+    void insertEdge(const pair<int, int>& edge) {
         adj[edge.first].push_back(edge.second);
+        inDegree[edge.second]++;
     }
  
-    void topologicalSort() {
-        vector<unsigned> in_degree(N, 0);
- 
-        for (int u = 0; u < N; u++) {
-            vector<unsigned>::iterator itr;
-            for (itr = adj[u].begin(); itr != adj[u].end(); itr++) {
-                in_degree[*itr]++;
-            }
-        }   
- 
-        queue<unsigned> q;
-        for (unsigned i = 0; i < N; i++) {
-            if (in_degree[i] == 0) {
+    void topologicalSort() { 
+        queue<int> q;
+        for (int i = 0; i < inDegree.size(); i++) {
+            if (inDegree[i] == 0) {
                 q.push(i);
             }
         }
 
-        unsigned cnt = 0;
- 
-        vector<unsigned> topo;
+        int count = 0;
  
         while (!q.empty()) {
-            unsigned u = q.front();
+            int u = q.front();
             q.pop();
-            topo.push_back(u);
-            vector<unsigned>::iterator itr;
-            for (itr = adj[u].begin(); itr != adj[u].end(); itr++) {
-                if (--in_degree[*itr] == 0) {
-                    q.push(*itr);
+
+            for(int i = 0; i < adj[u].size(); i++) {
+                if (--inDegree[adj[u][i]] == 0) {
+                    q.push(adj[u][i]);
                 }
             }
-            cnt++;
+            count++;
 
         }
 
-        if (cnt != N) {
+        if (count != N) {
             throw CycleFormedException();
         }
     }
@@ -80,22 +70,26 @@ public:
 class DynamicGraph{
 
 private:
-    unsigned N;
+    int N;
     double SAMPLE_PROBABILITY_THRESHOLD;
-    unordered_set<unsigned> S;
-    vector<unordered_set<unsigned>> A;
-    vector<unordered_set<unsigned>> D;
-    vector<unordered_set<unsigned>> As;
-    vector<unordered_set<unsigned>> Ds;
-    vector<unordered_set<unsigned>> AA;
-    unordered_map<unsigned, unordered_set<unsigned>> edges;
+    unordered_set<int> S;
+    vector<unordered_set<int>> A;
+    vector<unordered_set<int>> D;
+    vector<unordered_set<int>> As;
+    vector<unordered_set<int>> Ds;
+    vector<unordered_set<int>> AA;
+    unordered_map<int, unordered_set<int>> edges;
 
-    void update(const pair<unsigned,unsigned>& edge) {
-        edges[edge.first].insert(edge.second);
-        unsigned u = edge.first;
-        unsigned v = edge.second;
+    void update(const pair<int,int>& edge) {
+        int u = edge.first;
+        int v = edge.second;
+
+        edges[u].insert(v);
+
         A[u].insert(u);
         D[v].insert(v);
+
+        // ez n^2 itt van elrontva az egesz szerintem, de azt mondjak O(M) idoben megoldhato egy 1986-os cikk alapjan :)
 
         for (auto desc : D[v]) {
             for (auto anc : A[u]) {
@@ -117,18 +111,18 @@ private:
         }
     }
 
-    bool isSEquivalent(unsigned u, unsigned v) {
+    bool isSEquivalent(int u, int v) {
         return (As[u].size() == As[v].size()) && (Ds[u].size() == Ds[v].size());
     }
 
-    bool checkCycle(const pair<unsigned, unsigned>& edge) {
-        unsigned u = edge.first;
-        unsigned v = edge.second;
-        unordered_set<unsigned> to_explore;
+    bool checkCycle(const pair<int, int>& edge) {
+        int u = edge.first;
+        int v = edge.second;
+        unordered_set<int> to_explore;
         to_explore.insert(v);
 
         while (!to_explore.empty()) {
-            unsigned w  = *to_explore.begin();
+            int w  = *to_explore.begin();
             to_explore.erase(to_explore.begin());
 
             if ((w == u) || (AA[u].count(w))){
@@ -148,7 +142,7 @@ private:
     }
 
 public:
-    DynamicGraph(unsigned N) : N(N){
+    DynamicGraph(int N) : N(N){
         this->SAMPLE_PROBABILITY_THRESHOLD = 11 * log2(N) / sqrt(N);
         random_device rd;
         default_random_engine generator(rd());
@@ -159,7 +153,7 @@ public:
         Ds.resize(N);
         AA.resize(N);
 
-        for (unsigned i = 0; i < N; ++i) {
+        for (int i = 0; i < N; ++i) {
             if (distribution(generator) <= SAMPLE_PROBABILITY_THRESHOLD) {
                 S.insert(i);
                 As[i].insert(i);
@@ -171,7 +165,7 @@ public:
         }
     }
 
-    void insertEdge(const pair<unsigned, unsigned>& edge) {
+    void insertEdge(const pair<int, int>& edge) {
         update(edge);
         if (checkCycle(edge)) {
             throw CycleFormedException(edge);
@@ -181,14 +175,20 @@ public:
 
 int main()
 {
-    unsigned N = 10000;
-    vector<pair<unsigned, unsigned>> totalEdgesToInsert;
+    int N;
+    cout << "How many nodes?" << endl;
+    cin >> N;
 
-    for (size_t i = 0; i < N - 3; i++)
-    {
-        totalEdgesToInsert.push_back(make_pair(i, i + 1));
-        totalEdgesToInsert.push_back(make_pair(i, i + 2));
-        totalEdgesToInsert.push_back(make_pair(i, i + 3));
+    int M;
+    cout << "How many edges per node?" << endl;
+    cin >> M;
+    vector<pair<int, int>> totalEdgesToInsert;
+
+    for (size_t i = 0; i < N - M; i++) {
+        for (size_t j = 0; j < M; j++)
+        {
+            totalEdgesToInsert.push_back(make_pair(i, i + j + 1));
+        }
     }
     totalEdgesToInsert.push_back(make_pair(N - 1, 0));
 
@@ -207,12 +207,18 @@ int main()
         }
     }
 
+    // ok en lehet felreertem ezt az egeszet, de en a statikusnal ugy megyek, 
+    // hogy letrehozom az elso ellel a grafot, utana az elso kettovel, utana elso harommal... es igy tovabb
+
     StaticGraph sg = StaticGraph(1);
-    vector<pair<unsigned, unsigned>> edgesToInsertStatic;
+    vector<pair<int, int>> edgesToInsertStatic;
+    unordered_set<int> nodesStatic;
     auto start_static = chrono::high_resolution_clock::now();
     for (auto edge : totalEdgesToInsert) {
+        nodesStatic.insert(edge.first);
+        nodesStatic.insert(edge.second);
         edgesToInsertStatic.push_back(edge);
-        sg = StaticGraph(edgesToInsertStatic.size());
+        sg = StaticGraph(nodesStatic.size());
         for (auto edgeToInsert : edgesToInsertStatic) {
             sg.insertEdge(edgeToInsert);
         }
@@ -223,8 +229,11 @@ int main()
             auto duration = chrono::duration_cast<chrono::milliseconds>(stop_static - start_static);
             cout << "Static: Cycle was formed at inserting edge: (" << edge.first << ", " << edge.second << "). Time taken: " << duration.count() << " ms." << endl;
             break;
+        } catch (const exception& exc) {
+            cout << exc.what();
         }
     }
+    cout << "Done" << endl;
     return 0;
 }
 
