@@ -122,13 +122,12 @@ private:
     bool checkCycle(const pair<int, int>& edge) {
         int u = edge.first;
         int v = edge.second;
-        unordered_set<int> to_explore;
-        to_explore.insert(v);
+        queue<int> to_explore;
+        to_explore.push(v);
 
         while (!to_explore.empty()) {
-            int w  = *to_explore.begin();
-            to_explore.erase(to_explore.begin());
-
+            int w  = to_explore.front();
+            to_explore.pop();
             if ((w == u) || (AA[u].count(w))){
                 return true;
             }
@@ -138,7 +137,7 @@ private:
             else {
                 AA[w].insert(u);
                 for (const auto& e : edges[w]) {
-                    to_explore.insert(e);
+                    to_explore.push(e);
                 }
             }
         }
