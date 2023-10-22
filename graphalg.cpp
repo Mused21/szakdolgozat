@@ -16,6 +16,7 @@ public:
     CycleFormedException(){
     }
 
+    // amugy ez lehet tok folosleges mert a teszt forjaban ki tudom iratni mint a staticnal
     CycleFormedException(pair<int, int> edge) : edge(edge) {
     }
 
@@ -35,10 +36,12 @@ public:
  
     void insertEdge(const pair<int, int>& edge) {
         adj[edge.first].push_back(edge.second);
+        // modositottam az algon, hogy ilyenkor mar szamolja a befokokat, igy effektivebb sztem
         inDegree[edge.second]++;
     }
  
     void topologicalSort() { 
+        // Kahn algoritmus topsort, a topologiat kivettem belole mert most folosleges
         queue<int> q;
         for (int i = 0; i < inDegree.size(); i++) {
             if (inDegree[i] == 0) {
@@ -86,25 +89,26 @@ private:
 
         edges[u].insert(v);
 
-        A[u].insert(u);
-        D[v].insert(v);
+        // ez O(n^2) itt van elrontva az egesz szerintem, de azt mondjak O(M) idoben megoldhato egy 1986-os cikk alapjan :)
+        // elolvasva a 86-os cikket en nem talalok O(M) idot, hanem amortizalt O(N) idot, amit ilyen spanning treekkel csinalnak
+        // de egyreszt 2d pointer tomb, masreszt en egy 2d bool vectorral akartam leimplementalni de sokkal rosszabb lett mint ez :/
 
-        // ez n^2 itt van elrontva az egesz szerintem, de azt mondjak O(M) idoben megoldhato egy 1986-os cikk alapjan :)
 
+        // v minden leszarmazottjanak odaadjuk u oseit
         for (auto desc : D[v]) {
-            for (auto anc : A[u]) {
-                    A[desc].insert(anc);
-                    if (S.count(desc)) {
-                        Ds[anc].insert(desc);
-                    }
+            A[desc].insert(A[u].begin(), A[u].end());
+            if (S.count(desc)) {
+                for (auto anc : A[u]) {
+                    Ds[anc].insert(desc);
+                }
             }
-            
         }
 
+        // u minden osenek odaadjuk v leszarmazottait
         for (auto anc : A[u]) {
-            for (auto desc : D[v]) {
-                D[anc].insert(desc);
-                if (S.count(anc)) {
+            D[anc].insert(D[v].begin(), D[v].end());
+            if (S.count(anc)) {
+                for (auto desc : D[v]) {
                     As[desc].insert(anc);
                 }
             }
@@ -147,12 +151,15 @@ public:
         random_device rd;
         default_random_engine generator(rd());
         uniform_real_distribution<double> distribution(0.0, 1.0);
+        // vagy ide A = vector<unordered_set<int>>[N] ? stb.
         A.resize(N);
         D.resize(N);
         As.resize(N);
         Ds.resize(N);
         AA.resize(N);
 
+        // def szerint mindenki ose es leszarmazottja sajat maganak, szoval mar itt inicializalom ezeket, 
+        // vagy eleg lenne updatenel, ha mondjuk nem hasznalunk minden csucsot?
         for (int i = 0; i < N; ++i) {
             if (distribution(generator) <= SAMPLE_PROBABILITY_THRESHOLD) {
                 S.insert(i);
@@ -182,6 +189,9 @@ int main()
     int M;
     cout << "How many edges per node?" << endl;
     cin >> M;
+
+    // ok ezt tudom h nem pontosan annyi mert az utolso M-bol nem fog kiindulni csucs, majd ezen javitok, de elsore jo kozelites
+
     vector<pair<int, int>> totalEdgesToInsert;
 
     for (size_t i = 0; i < N - M; i++) {
@@ -190,7 +200,7 @@ int main()
             totalEdgesToInsert.push_back(make_pair(i, i + j + 1));
         }
     }
-    totalEdgesToInsert.push_back(make_pair(N - 1, 0));
+    totalEdgesToInsert.push_back(make_pair(N - 1, N - M - 1));
 
     auto start_dynamic = chrono::high_resolution_clock::now();
 
@@ -207,7 +217,7 @@ int main()
         }
     }
 
-    // ok en lehet felreertem ezt az egeszet, de en a statikusnal ugy megyek, 
+    // hmm en lehet felreertem ezt az egeszet, de en a statikusnal ugy megyek, 
     // hogy letrehozom az elso ellel a grafot, utana az elso kettovel, utana elso harommal... es igy tovabb
 
     StaticGraph sg = StaticGraph(1);
