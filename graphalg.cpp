@@ -9,54 +9,52 @@
 
 using namespace std;
 
-class CycleFormedException : public exception {
-private:
-    pair<int, int> edge;
-public:
-    CycleFormedException(){
-    }
-
-    // amugy ez lehet tok folosleges mert a teszt forjaban ki tudom iratni mint a staticnal
-    CycleFormedException(pair<int, int> edge) : edge(edge) {
-    }
-
-    const pair<int, int>& getEdge() const {
-        return edge;
-    }
-};
-
 class StaticGraph {
     int N;
     vector<vector<int>> adj;
     vector<int> inDegree;
+    unordered_set<int> zeroDegree;
+    vector<bool> everSeen;
+    int nodeCounter;
  
 public:
-    StaticGraph(int N) : N(N), adj(N), inDegree(N){
+    StaticGraph(int N) : N(N), adj(N), inDegree(N), everSeen(N), nodeCounter(0){
     }
  
     void insertEdge(const pair<int, int>& edge) {
         adj[edge.first].push_back(edge.second);
-        // modositottam az algon, hogy ilyenkor mar szamolja a befokokat, igy effektivebb sztem
         inDegree[edge.second]++;
+        if (inDegree[edge.first] == 0) {
+            zeroDegree.insert(edge.first);
+        }
+        if (inDegree[edge.second] == 1) {
+            zeroDegree.erase(edge.second);
+        }
+        if (!everSeen[edge.first]) {
+            everSeen[edge.first] = true;
+            nodeCounter++;
+        }
+        if (!everSeen[edge.second]) {
+            everSeen[edge.second] = true;
+            nodeCounter++;
+        }
     }
  
-    void topologicalSort() { 
+    bool hasCycle() { 
         // Kahn algoritmus topsort, a topologiat kivettem belole mert most folosleges
         queue<int> q;
-        for (int i = 0; i < inDegree.size(); i++) {
-            if (inDegree[i] == 0) {
-                q.push(i);
-            }
+        for (int element : zeroDegree) {
+            q.push(element);
         }
-
         int count = 0;
+        vector<int> inDegreeCopy = inDegree;
  
         while (!q.empty()) {
             int u = q.front();
             q.pop();
 
             for(int i = 0; i < adj[u].size(); i++) {
-                if (--inDegree[adj[u][i]] == 0) {
+                if (--inDegreeCopy[adj[u][i]] == 0) {
                     q.push(adj[u][i]);
                 }
             }
@@ -64,9 +62,10 @@ public:
 
         }
 
-        if (count != N) {
-            throw CycleFormedException();
+        if (count != nodeCounter) {
+            return true;
         }
+        return false;
     }
 };
 
@@ -81,7 +80,7 @@ private:
     vector<unordered_set<int>> As;
     vector<unordered_set<int>> Ds;
     vector<unordered_set<int>> AA;
-    unordered_map<int, unordered_set<int>> edges;
+    vector<unordered_set<int>> edges;
 
     void update(const pair<int,int>& edge) {
         int u = edge.first;
@@ -119,7 +118,7 @@ private:
         return (As[u].size() == As[v].size()) && (Ds[u].size() == Ds[v].size());
     }
 
-    bool checkCycle(const pair<int, int>& edge) {
+    bool hasCycle(const pair<int, int>& edge) {
         int u = edge.first;
         int v = edge.second;
         queue<int> to_explore;
@@ -156,6 +155,7 @@ public:
         As.resize(N);
         Ds.resize(N);
         AA.resize(N);
+        edges.resize(N);
 
         // def szerint mindenki ose es leszarmazottja sajat maganak, szoval mar itt inicializalom ezeket, 
         // vagy eleg lenne updatenel, ha mondjuk nem hasznalunk minden csucsot?
@@ -171,11 +171,9 @@ public:
         }
     }
 
-    void insertEdge(const pair<int, int>& edge) {
+    bool insertEdge(const pair<int, int>& edge) {
         update(edge);
-        if (checkCycle(edge)) {
-            throw CycleFormedException(edge);
-        }
+        return hasCycle(edge);
     }
 };
 
@@ -206,43 +204,27 @@ int main()
     DynamicGraph dg = DynamicGraph(N);
 
     for (auto edge : totalEdgesToInsert) {
-        try {
-            dg.insertEdge(edge);
-        } catch (const CycleFormedException& exception) {
+        if (dg.insertEdge(edge)) {
             auto stop_dynamic = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(stop_dynamic - start_dynamic);
-            cout << "Dynamic: Cycle was formed at inserting edge: (" << exception.getEdge().first << ", " << exception.getEdge().second << "). Time taken: " << duration.count() << " ms." << endl;
+            cout << "Dynamic: Cycle was formed at inserting edge: (" << edge.first << ", " << edge.second << "). Time taken: " << duration.count() << " ms." << endl;
             break;
         }
     }
 
-    // hmm en lehet felreertem ezt az egeszet, de en a statikusnal ugy megyek, 
-    // hogy letrehozom az elso ellel a grafot, utana az elso kettovel, utana elso harommal... es igy tovabb
-
-    StaticGraph sg = StaticGraph(1);
-    vector<pair<int, int>> edgesToInsertStatic;
-    unordered_set<int> nodesStatic;
     auto start_static = chrono::high_resolution_clock::now();
+    StaticGraph sg = StaticGraph(N);
+
     for (auto edge : totalEdgesToInsert) {
-        nodesStatic.insert(edge.first);
-        nodesStatic.insert(edge.second);
-        edgesToInsertStatic.push_back(edge);
-        sg = StaticGraph(nodesStatic.size());
-        for (auto edgeToInsert : edgesToInsertStatic) {
-            sg.insertEdge(edgeToInsert);
-        }
-        try {
-            sg.topologicalSort();
-        } catch (const CycleFormedException& exception) {
+        sg.insertEdge(edge);
+        if (sg.hasCycle()) {
             auto stop_static = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(stop_static - start_static);
             cout << "Static: Cycle was formed at inserting edge: (" << edge.first << ", " << edge.second << "). Time taken: " << duration.count() << " ms." << endl;
             break;
-        } catch (const exception& exc) {
-            cout << exc.what();
         }
     }
+
     cout << "Done" << endl;
     return 0;
 }
-
