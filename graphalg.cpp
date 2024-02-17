@@ -10,18 +10,14 @@
 using namespace std;
 
 class StaticGraph {
+private:
     int N;
     vector<vector<int>> adj;
     vector<int> inDegree;
     unordered_set<int> zeroDegree;
     vector<bool> everSeen;
     int nodeCounter;
- 
-public:
-    StaticGraph(int N) : N(N), adj(N), inDegree(N), everSeen(N), nodeCounter(0){
-    }
- 
-    void insertEdge(const pair<int, int>& edge) {
+    void update(const pair<int, int>& edge) {
         adj[edge.first].push_back(edge.second);
         inDegree[edge.second]++;
         if (inDegree[edge.first] == 0) {
@@ -66,6 +62,15 @@ public:
             return true;
         }
         return false;
+    }
+ 
+public:
+    StaticGraph(int N) : N(N), adj(N), inDegree(N), everSeen(N), nodeCounter(0){
+    }
+
+    bool insertEdge(const pair<int, int>& edge) {
+        update(edge);
+        return !hasCycle();
     }
 };
 
@@ -173,7 +178,7 @@ public:
 
     bool insertEdge(const pair<int, int>& edge) {
         update(edge);
-        return hasCycle(edge);
+        return !hasCycle(edge);
     }
 };
 
@@ -204,7 +209,7 @@ int main()
     DynamicGraph dg = DynamicGraph(N);
 
     for (auto edge : totalEdgesToInsert) {
-        if (dg.insertEdge(edge)) {
+        if (!dg.insertEdge(edge)) {
             auto stop_dynamic = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(stop_dynamic - start_dynamic);
             cout << "Dynamic: Cycle was formed at inserting edge: (" << edge.first << ", " << edge.second << "). Time taken: " << duration.count() << " ms." << endl;
@@ -216,8 +221,7 @@ int main()
     StaticGraph sg = StaticGraph(N);
 
     for (auto edge : totalEdgesToInsert) {
-        sg.insertEdge(edge);
-        if (sg.hasCycle()) {
+        if (!sg.insertEdge(edge)) {
             auto stop_static = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(stop_static - start_static);
             cout << "Static: Cycle was formed at inserting edge: (" << edge.first << ", " << edge.second << "). Time taken: " << duration.count() << " ms." << endl;
