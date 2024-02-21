@@ -2,6 +2,9 @@
 #include <vector>
 #include <chrono>
 #include <fstream>
+#include <random>
+#include <numeric>
+#include <algorithm>
 #include "graphalg.h"
 
 using namespace std;
@@ -13,39 +16,43 @@ public:
         unordered_set<string> existingEdges;
         srand(time(nullptr));
 
-        for (int i = 0; i < M - 1; ++i) {
+        vector<int> array(N);
+        iota(array.begin(), array.end(), 0);
+        mt19937 rng(random_device{}());
+        uniform_int_distribution<> dist(0, N - 1);
+        std::shuffle(array.begin(), array.end(), rng);
+
+        for (int i = 0; i < M; ++i) {
             int u, v;
+            string key;
             do {
-                u = rand() % N;
-                v = rand() % N; 
-            } while (u >= v || existingEdges.find(edgeKey(u, v)) != existingEdges.end());
+                u = dist(rng);
+                v = dist(rng);
+                if (u > v) {
+                    swap(u, v);
+                }
+                key = edgeKey(array[u], array[v]);
+            } while (u == v || existingEdges.find(key) != existingEdges.end());
 
-            edges.emplace_back(u, v);
-            existingEdges.insert(edgeKey(u, v));
+            edges.emplace_back(array[u], array[v]);
+            existingEdges.insert(key);
         }
-        // ez igy sokszor eredmenyez aciklikus grafot tbh
-        /*if (M > N - 1) {
+
+        for (int i = 0; i < M/100; ++i) {
             int u, v;
+            string key;
             do {
-                u = rand() % (N - 1) + 1;
-                v = rand() % u;
-            } while (existingEdges.find(edgeKey(u, v)) != existingEdges.end());
+                u = dist(rng);
+                v = dist(rng);
+                if (u < v) {
+                    swap(u, v);
+                }
+                key = edgeKey(array[u], array[v]);
+            } while (u == v || existingEdges.find(key) != existingEdges.end());
 
-            edges.emplace_back(u, v);
-            existingEdges.insert(edgeKey(u, v));
+            edges.emplace_back(array[u], array[v]);
+            existingEdges.insert(key);
         }
-        */
-        if (M > N - 1 && !edges.empty()) {
-            int randomIndex = rand() % edges.size();
-            auto& selectedEdge = edges[randomIndex];
-        
-            int u = selectedEdge.second;
-            int v = selectedEdge.first;
-
-            edges.emplace_back(u, v);
-            existingEdges.insert(edgeKey(u, v));
-        }
-
         return edges;
     }
 
