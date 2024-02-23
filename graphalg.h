@@ -7,7 +7,8 @@
 
 using namespace std;
 
-class StaticGraph {
+class StaticGraph
+{
 private:
     int N;
     vector<vector<int>> adj;
@@ -16,33 +17,29 @@ private:
     vector<bool> everSeen;
     int nodeCounter;
 
-    void update(const pair<int, int>& edge);
+    void update(const pair<int, int> &edge);
     bool hasCycle();
 
 public:
     StaticGraph(int N);
-    bool insertEdge(const pair<int, int>& edge);
+    bool insertEdge(const pair<int, int> &edge);
 };
 
-class DynamicGraph {
+class DynamicGraph
+{
 private:
     int N;
     double SAMPLE_PROBABILITY_THRESHOLD;
     unordered_set<int> S;
-    vector<unordered_set<int>> A;
-    vector<unordered_set<int>> D;
-    vector<unordered_set<int>> As;
-    vector<unordered_set<int>> Ds;
-    vector<unordered_set<int>> AA;
-    vector<unordered_set<int>> edges;
+    vector<unordered_set<int>> A, D, As, Ds, AA, edges;
 
-    void update(const pair<int,int>& edge);
+    void update(const pair<int, int> &edge);
     bool isSEquivalent(int u, int v);
-    bool hasCycle(const pair<int, int>& edge);
+    bool hasCycle(const pair<int, int> &edge);
 
 public:
     DynamicGraph(int N);
-    bool insertEdge(const pair<int, int>& edge);
+    bool insertEdge(const pair<int, int> &edge);
 };
 
 #endif
