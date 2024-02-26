@@ -62,7 +62,7 @@ bool GuiseppeDescendant::is_descendant(int u, int v) {
 bool GuiseppeDescendant::insertEdge(std::pair<int,int>& edge) {
   int u = edge.first;
   int v = edge.second;
-  if (impl->index[v][u] != nullptr) return true;
+  if (impl->index[v][u] != nullptr) return false;
   insert(u,v);
-  return false;
+  return true;
 }

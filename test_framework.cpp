@@ -98,6 +98,7 @@ template <typename Algo> std::pair<std::optional<std::pair<int, int>>, long long
   for (auto& edge: edges) {
     if (!algo.insertEdge(edge)) {
       retEdge = edge;
+      break;
     }
   }
   auto end = chrono::high_resolution_clock::now();
@@ -152,6 +153,13 @@ int main()
             i++;
         } else {
           std::cout << "error! static: " << staticFoundCycle << " dynamic: " << dynamicFoundCycle << " guiseppe: " << guiseppeFoundCycle << std::endl;
+        }
+        if (dynamicOptEdge != staticOptEdge || dynamicOptEdge != guiseppeOptEdge) {
+          std::cerr << "error! these guys found cycles in different places."
+                    << " dynamic: " << dynamicOptEdge.value().first << "," << dynamicOptEdge.value().second
+                    << " static: " << staticOptEdge.value().first << "," << staticOptEdge.value().second
+                    << " guiseppe: " << guiseppeOptEdge.value().first << "," << guiseppeOptEdge.value().second
+                    << std::endl;
         }
 
         if (!dynamicFoundCycle && !staticFoundCycle)
