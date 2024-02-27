@@ -6,8 +6,9 @@
 #include <numeric>
 #include <optional>
 #include <algorithm>
-#include "graphalg.h"
-#include "guiseppe.h"
+#include "dynamic.h"
+#include "static.h"
+#include "italiano.h"
 
 using namespace std;
 
@@ -120,7 +121,7 @@ int main()
     int i = 0;
     long staticSum = 0;
     long dynamicSum = 0;
-    long guiseppeSum = 0;
+    long italianoSum = 0;
 
     while (i < C)
     {
@@ -128,8 +129,8 @@ int main()
         pair<int, int> dynamicCycle;
         bool staticFoundCycle = false;
         pair<int, int> staticCycle;
-        bool guiseppeFoundCycle = false;
-        std::pair<int, int> guiseppeCycle;
+        bool italianoFoundCycle = false;
+        std::pair<int, int> italianoCycle;
 
         auto start_generation = chrono::high_resolution_clock::now();
         auto edges = DirectedGraphGenerator::generateGraph(N, M, Gver);
@@ -140,25 +141,25 @@ int main()
 
         auto [dynamicOptEdge, dynamicTime] = runAlgorithm<DynamicGraph>(N, edges);
         auto [staticOptEdge, staticTime] = runAlgorithm<StaticGraph>(N, edges);
-        auto [guiseppeOptEdge, guiseppeTime] = runAlgorithm<GuiseppeDescendant>(N, edges);
+        auto [italianoOptEdge, italianoTime] = runAlgorithm<ItalianoGraph>(N, edges);
         dynamicSum += dynamicTime;
         staticSum += staticTime;
-        guiseppeSum += guiseppeTime;
+        italianoSum += italianoTime;
         if (dynamicOptEdge) { dynamicFoundCycle = true; dynamicCycle = dynamicOptEdge.value(); }
         if (staticOptEdge) { staticFoundCycle = true; staticCycle = staticOptEdge.value(); }
-        if (guiseppeOptEdge) { guiseppeFoundCycle = true; guiseppeCycle = guiseppeOptEdge.value(); }
+        if (italianoOptEdge) { italianoFoundCycle = true; italianoCycle = italianoOptEdge.value(); }
 
-        if (dynamicFoundCycle && staticFoundCycle && guiseppeFoundCycle)
+        if (dynamicFoundCycle && staticFoundCycle && italianoFoundCycle)
         {
             i++;
         } else {
-          std::cout << "error! static: " << staticFoundCycle << " dynamic: " << dynamicFoundCycle << " guiseppe: " << guiseppeFoundCycle << std::endl;
+          std::cout << "error! static: " << staticFoundCycle << " dynamic: " << dynamicFoundCycle << " italiano: " << italianoFoundCycle << std::endl;
         }
-        if (dynamicOptEdge != staticOptEdge || dynamicOptEdge != guiseppeOptEdge) {
+        if (dynamicOptEdge != staticOptEdge || dynamicOptEdge != italianoOptEdge) {
           std::cerr << "error! these guys found cycles in different places."
                     << " dynamic: " << dynamicOptEdge.value().first << "," << dynamicOptEdge.value().second
                     << " static: " << staticOptEdge.value().first << "," << staticOptEdge.value().second
-                    << " guiseppe: " << guiseppeOptEdge.value().first << "," << guiseppeOptEdge.value().second
+                    << " italiano: " << italianoOptEdge.value().first << "," << italianoOptEdge.value().second
                     << std::endl;
         }
 
@@ -188,7 +189,7 @@ int main()
     cout << "Graph generation: " << ((Gver == 1) ? "random" : "uniform") << endl;
     cout << "Dynamic graph speed average: " << dynamicSum / C << " ms." << endl;
     cout << "Static graph speed average: " << staticSum / C << " ms." << endl;
-    std::cout << "Guiseppe graph speed average: " << guiseppeSum / C << " ms." << std::endl;
+    std::cout << "Guiseppe graph speed average: " << italianoSum / C << " ms." << std::endl;
 
     return 0;
 }
