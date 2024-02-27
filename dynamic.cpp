@@ -4,18 +4,26 @@
 #include <algorithm>
 #include <queue>
 
-DynamicGraph::DynamicGraph(size_t N) : N(N) {
+DynamicGraph::DynamicGraph(size_t N) : N(N)
+{
     SAMPLE_PROBABILITY_THRESHOLD = 11 * log2(N) / sqrt(N);
     std::random_device rd;
     std::default_random_engine generator(rd());
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-    A.resize(N);
-    D.resize(N);
     As.resize(N);
     Ds.resize(N);
     AA.resize(N);
     edges.resize(N);
+
+    index.resize(N);
+    treeNodePool.resize(N * N);
+    for (int i = 0; i < N; ++i)
+    {
+        index[i] = std::vector<TreeNode *>(N, nullptr);
+        index[i][i] = &(treeNodePool[nextTreeNode++]);
+        index[i][i]->value = i;
+    }
 
     for (int i = 0; i < N; ++i)
     {
@@ -25,53 +33,71 @@ DynamicGraph::DynamicGraph(size_t N) : N(N) {
             As[i].insert(i);
             Ds[i].insert(i);
         }
-        A[i].insert(i);
-        D[i].insert(i);
         AA[i].insert(i);
     }
 }
 
-void DynamicGraph::update(const std::pair<int, int> &edge) {
+bool DynamicGraph::isDescendant(int u, int v)
+{
+    return index[u][v] != nullptr;
+}
+
+void DynamicGraph::meld(int x, int j, int u, int v)
+{
+    auto pv = &(treeNodePool[nextTreeNode++]);
+    pv->value = v;
+    index[x][v] = pv;
+    index[x][u]->children.push_back(pv);
+
+    for (auto child : index[j][v]->children)
+    {
+        if (!isDescendant(x, child->value))
+        {
+            meld(x, j, v, child->value);
+        }
+    }
+
+    if (S.count(v))
+    {
+        As[v].insert(x);
+    }
+
+    if (S.count(x))
+    {
+        Ds[x].insert(v);
+    }
+}
+
+void DynamicGraph::update(const std::pair<int, int> &edge)
+{
     int u = edge.first;
     int v = edge.second;
 
     edges[u].insert(v);
 
-    for (auto desc : D[v])
+    if (isDescendant(u, v))
+        return;
+    for (int x = 0; x < N; ++x)
     {
-        A[desc].insert(A[u].begin(), A[u].end());
-        if (S.count(desc))
-        {
-            for (auto anc : A[u])
-            {
-                Ds[anc].insert(desc);
-            }
-        }
-    }
-
-    for (auto anc : A[u])
-    {
-        D[anc].insert(D[v].begin(), D[v].end());
-        if (S.count(anc))
-        {
-            for (auto desc : D[v])
-            {
-                As[desc].insert(anc);
-            }
-        }
+        if (!isDescendant(x, u))
+            continue;
+        if (isDescendant(x, v))
+            continue;
+        meld(x, v, u, v);
     }
 }
 
-bool DynamicGraph::isSEquivalent(int u, int v) {
-    return (As[u].size() == As[v].size()) && (Ds[u].size() == Ds[v].size()) && (A[u].count(v) || A[v].count(u));
+bool DynamicGraph::isSEquivalent(int u, int v)
+{
+    return (As[u].size() == As[v].size()) && (Ds[u].size() == Ds[v].size()) && (isDescendant(u, v) || isDescendant(v, u));
 }
 
-bool DynamicGraph::hasCycle(const std::pair<int, int> &edge) {
+bool DynamicGraph::hasCycle(const std::pair<int, int> &edge)
+{
     int u = edge.first;
     int v = edge.second;
     std::queue<int> to_explore;
     to_explore.push(v);
-
     while (!to_explore.empty())
     {
         int w = to_explore.front();
@@ -96,7 +122,8 @@ bool DynamicGraph::hasCycle(const std::pair<int, int> &edge) {
     return false;
 }
 
-bool DynamicGraph::insertEdge(const std::pair<int, int> &edge) {
+bool DynamicGraph::insertEdge(const std::pair<int, int> &edge)
+{
     update(edge);
     return !hasCycle(edge);
 }

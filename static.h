@@ -5,7 +5,8 @@
 #include <vector>
 #include <algorithm>
 
-class StaticGraph {
+class StaticGraph
+{
 private:
     size_t N;
     std::vector<std::vector<int>> adj;
