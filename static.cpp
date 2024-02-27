@@ -3,7 +3,8 @@
 
 StaticGraph::StaticGraph(size_t N) : N(N), adj(N), inDegree(N), everSeen(N, false), nodeCounter(0) {}
 
-void StaticGraph::update(const std::pair<int, int> &edge) {
+void StaticGraph::update(const std::pair<int, int> &edge)
+{
     adj[edge.first].push_back(edge.second);
     inDegree[edge.second]++;
     if (inDegree[edge.first] == 0)
@@ -26,7 +27,8 @@ void StaticGraph::update(const std::pair<int, int> &edge) {
     }
 }
 
-bool StaticGraph::hasCycle() {
+bool StaticGraph::hasCycle()
+{
     std::queue<int> q;
     for (int element : zeroDegree)
     {
@@ -53,7 +55,8 @@ bool StaticGraph::hasCycle() {
     return count != nodeCounter;
 }
 
-bool StaticGraph::insertEdge(const std::pair<int, int> &edge) {
+bool StaticGraph::insertEdge(const std::pair<int, int> &edge)
+{
     update(edge);
     return !hasCycle();
 }
