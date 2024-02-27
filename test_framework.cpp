@@ -142,11 +142,8 @@ int main()
         std::cout << "Generation lasted " << duration.count() << " ms." << std::endl;
 
         auto [italianoOptEdge, italianoTime] = runAlgorithm<ItalianoGraph>(N, edges);
-        std::cout << "Italiano time: " << italianoTime << " ms." << std::endl;
         auto [dynamicOptEdge, dynamicTime] = runAlgorithm<DynamicGraph>(N, edges);
-        std::cout << "Dynamic time: " << dynamicTime << " ms." << std::endl;
         auto [staticOptEdge, staticTime] = runAlgorithm<StaticGraph>(N, edges);
-        std::cout << "Static time: " << staticTime << " ms." << std::endl;
 
         dynamicSum += dynamicTime;
         staticSum += staticTime;
