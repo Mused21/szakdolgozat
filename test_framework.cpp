@@ -4,8 +4,10 @@
 #include <fstream>
 #include <random>
 #include <numeric>
+#include <optional>
 #include <algorithm>
 #include "graphalg.h"
+#include "guiseppe.h"
 
 using namespace std;
 
@@ -89,6 +91,20 @@ private:
     }
 };
 
+template <typename Algo> std::pair<std::optional<std::pair<int, int>>, long long> runAlgorithm(int N, std::vector<std::pair<int,int>>& edges) {
+  Algo algo(N);
+  std::optional<std::pair<int,int>> retEdge = {};
+  auto start = chrono::high_resolution_clock::now();
+  for (auto& edge: edges) {
+    if (!algo.insertEdge(edge)) {
+      retEdge = edge;
+      break;
+    }
+  }
+  auto end = chrono::high_resolution_clock::now();
+  return {retEdge, chrono::duration_cast<chrono::milliseconds>(end - start).count()};
+}
+
 int main()
 {
     int N, M, C, Gver;
@@ -104,6 +120,7 @@ int main()
     int i = 0;
     long staticSum = 0;
     long dynamicSum = 0;
+    long guiseppeSum = 0;
 
     while (i < C)
     {
@@ -111,6 +128,8 @@ int main()
         pair<int, int> dynamicCycle;
         bool staticFoundCycle = false;
         pair<int, int> staticCycle;
+        bool guiseppeFoundCycle = false;
+        std::pair<int, int> guiseppeCycle;
 
         auto start_generation = chrono::high_resolution_clock::now();
         auto edges = DirectedGraphGenerator::generateGraph(N, M, Gver);
@@ -119,39 +138,28 @@ int main()
 
         cout << "Generation lasted " << duration.count() << " ms." << endl;
 
-        auto start_dynamic = chrono::high_resolution_clock::now();
-        DynamicGraph dg = DynamicGraph(N);
-        for (auto edge : edges)
-        {
-            if (!dg.insertEdge(edge))
-            {
-                auto stop_dynamic = chrono::high_resolution_clock::now();
-                auto duration = chrono::duration_cast<chrono::milliseconds>(stop_dynamic - start_dynamic);
-                dynamicFoundCycle = true;
-                dynamicCycle = edge;
-                dynamicSum += duration.count();
-                break;
-            }
-        }
+        auto [dynamicOptEdge, dynamicTime] = runAlgorithm<DynamicGraph>(N, edges);
+        auto [staticOptEdge, staticTime] = runAlgorithm<StaticGraph>(N, edges);
+        auto [guiseppeOptEdge, guiseppeTime] = runAlgorithm<GuiseppeDescendant>(N, edges);
+        dynamicSum += dynamicTime;
+        staticSum += staticTime;
+        guiseppeSum += guiseppeTime;
+        if (dynamicOptEdge) { dynamicFoundCycle = true; dynamicCycle = dynamicOptEdge.value(); }
+        if (staticOptEdge) { staticFoundCycle = true; staticCycle = staticOptEdge.value(); }
+        if (guiseppeOptEdge) { guiseppeFoundCycle = true; guiseppeCycle = guiseppeOptEdge.value(); }
 
-        auto start_static = chrono::high_resolution_clock::now();
-        StaticGraph sg = StaticGraph(N);
-        for (auto edge : edges)
-        {
-            if (!sg.insertEdge(edge))
-            {
-                auto stop_static = chrono::high_resolution_clock::now();
-                auto duration = chrono::duration_cast<chrono::milliseconds>(stop_static - start_static);
-                staticFoundCycle = true;
-                staticCycle = edge;
-                staticSum += duration.count();
-                break;
-            }
-        }
-
-        if (dynamicFoundCycle && staticFoundCycle)
+        if (dynamicFoundCycle && staticFoundCycle && guiseppeFoundCycle)
         {
             i++;
+        } else {
+          std::cout << "error! static: " << staticFoundCycle << " dynamic: " << dynamicFoundCycle << " guiseppe: " << guiseppeFoundCycle << std::endl;
+        }
+        if (dynamicOptEdge != staticOptEdge || dynamicOptEdge != guiseppeOptEdge) {
+          std::cerr << "error! these guys found cycles in different places."
+                    << " dynamic: " << dynamicOptEdge.value().first << "," << dynamicOptEdge.value().second
+                    << " static: " << staticOptEdge.value().first << "," << staticOptEdge.value().second
+                    << " guiseppe: " << guiseppeOptEdge.value().first << "," << guiseppeOptEdge.value().second
+                    << std::endl;
         }
 
         if (!dynamicFoundCycle && !staticFoundCycle)
@@ -180,6 +188,7 @@ int main()
     cout << "Graph generation: " << ((Gver == 1) ? "random" : "uniform") << endl;
     cout << "Dynamic graph speed average: " << dynamicSum / C << " ms." << endl;
     cout << "Static graph speed average: " << staticSum / C << " ms." << endl;
+    std::cout << "Guiseppe graph speed average: " << guiseppeSum / C << " ms." << std::endl;
 
     return 0;
 }
