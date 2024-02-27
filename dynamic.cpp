@@ -3,8 +3,9 @@
 #include <random>
 #include <algorithm>
 #include <queue>
+#include <iostream>
 
-DynamicGraph::DynamicGraph(size_t N) : N(N)
+DynamicGraph::DynamicGraph(size_t N) : N(N), nextTreeNode(0)
 {
     SAMPLE_PROBABILITY_THRESHOLD = 11 * log2(N) / sqrt(N);
     std::random_device rd;
@@ -57,14 +58,14 @@ void DynamicGraph::meld(int x, int j, int u, int v)
         }
     }
 
-    if (S.count(v))
-    {
-        As[v].insert(x);
-    }
-
     if (S.count(x))
     {
         Ds[x].insert(v);
+    }
+
+    if (S.count(v))
+    {
+        As[v].insert(x);
     }
 }
 
