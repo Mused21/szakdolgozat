@@ -23,7 +23,6 @@ private:
     void update(const std::pair<int, int> &edge);
     bool isSEquivalent(int u, int v);
     bool hasCycle(const std::pair<int, int> &edge);
-    void updateAs(int v, int s);
 
 public:
     DynamicGraph(size_t N);

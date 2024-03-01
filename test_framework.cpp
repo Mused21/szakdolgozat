@@ -145,10 +145,6 @@ int main()
         auto [dynamicOptEdge, dynamicTime] = runAlgorithm<DynamicGraph>(N, edges);
         auto [staticOptEdge, staticTime] = runAlgorithm<StaticGraph>(N, edges);
 
-        dynamicSum += dynamicTime;
-        staticSum += staticTime;
-        italianoSum += italianoTime;
-
         if (dynamicOptEdge)
         {
             dynamicFoundCycle = true;
@@ -167,6 +163,9 @@ int main()
 
         if (dynamicFoundCycle && staticFoundCycle && italianoFoundCycle)
         {
+            dynamicSum += dynamicTime;
+            staticSum += staticTime;
+            italianoSum += italianoTime;
             i++;
         }
         if (dynamicOptEdge != staticOptEdge || dynamicOptEdge != italianoOptEdge)
@@ -178,7 +177,7 @@ int main()
                       << std::endl;
         }
 
-        if (!dynamicFoundCycle && !staticFoundCycle && italianoFoundCycle)
+        if (!dynamicFoundCycle && !staticFoundCycle && !italianoFoundCycle)
         {
             std::cout << "No cycle found, regenerating graph." << std::endl;
             continue;
